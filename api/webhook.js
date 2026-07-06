@@ -1,12 +1,5 @@
 const { verifySignature, replyMessage } = require('../lib/line');
 
-// 署名検証にraw bodyが必要なため、自動JSONパースを無効化する
-module.exports.config = {
-  api: {
-    bodyParser: false,
-  },
-};
-
 function readRawBody(req) {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -55,29 +48,40 @@ async function handleEvent(event) {
   }
 }
 
-module.exports = async (req, res) => {
+async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(200).send('OK');
     return;
   }
 
-  const rawBody = await readRawBody(req);
-  const signature = req.headers['x-line-signature'];
-
-  if (!verifySignature(rawBody, signature)) {
-    res.status(401).send('invalid signature');
-    return;
-  }
-
-  const body = JSON.parse(rawBody.toString('utf-8'));
-  const events = body.events || [];
-
   try {
-    await Promise.all(events.map(handleEvent));
-  } catch (err) {
-    console.error('webhook handling error:', err);
-  }
+    const rawBody = await readRawBody(req);
+    const signature = req.headers['x-line-signature'];
 
-  // LINEの再送を避けるため、内部エラーが起きても200を返す
-  res.status(200).send('OK');
+    if (!verifySignature(rawBody, signature)) {
+      res.status(401).send('invalid signature');
+      return;
+    }
+
+    const body = JSON.parse(rawBody.toString('utf-8'));
+    const events = body.events || [];
+
+    await Promise.all(events.map(handleEvent));
+
+    res.status(200).send('OK');
+  } catch (err) {
+    // ここでエラーが出る場合、Vercelの環境変数(LINE_CHANNEL_SECRET等)が
+    // 未設定/不正な可能性が高い。詳細はVercelのFunction Logsで確認する
+    console.error('webhook handling error:', err);
+    res.status(200).send('OK');
+  }
+}
+
+// 署名検証にraw bodyが必要なため、自動JSONパースを無効化する
+handler.config = {
+  api: {
+    bodyParser: false,
+  },
 };
+
+module.exports = handler;
