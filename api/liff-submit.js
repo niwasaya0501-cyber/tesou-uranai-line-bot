@@ -1,6 +1,7 @@
 const { resizeForVision } = require('../lib/image');
 const { readPalm, WORRY_LABELS } = require('../lib/openai');
 const { pushMessage } = require('../lib/line');
+const { saveSession } = require('../lib/conversation');
 
 // 手前でクライアント側リサイズ済みだが、念のため異常に大きいリクエストは弾く
 const MAX_INPUT_BYTES = 8 * 1024 * 1024;
@@ -59,6 +60,19 @@ module.exports = async (req, res) => {
     const resultText = await readPalm(resizedBase64Images, worry);
 
     await pushMessage(userId, resultText);
+
+    // 鑑定結果をセッションとして保存し、この後LINEのトークで続きの質問ができるようにする。
+    // ここが失敗しても鑑定結果自体は既に届いているので、レスポンスは成功のままにする
+    try {
+      await saveSession(userId, {
+        worry,
+        readingText: resultText,
+        turns: [],
+        turnCount: 0,
+      });
+    } catch (sessionErr) {
+      console.error('saveSession error:', sessionErr);
+    }
 
     res.status(200).json({ ok: true });
   } catch (err) {

@@ -1,4 +1,6 @@
 const { verifySignature, replyMessage } = require('../lib/line');
+const { continueChat } = require('../lib/openai');
+const { getSession, saveSession, deleteSession, MAX_TURNS } = require('../lib/conversation');
 
 function readRawBody(req) {
   return new Promise((resolve, reject) => {
@@ -39,12 +41,50 @@ async function handleEvent(event) {
   }
 
   if (event.type === 'message' && event.message.type === 'text') {
-    await replyMessage(event.replyToken, [
-      liffButtonMessage(
-        '手相を占う',
-        '手相を占うには、下のボタンをタップしてください。'
-      ),
-    ]);
+    const userId = event.source.userId;
+    const session = userId ? await getSession(userId) : null;
+
+    // 直前に鑑定したセッションがなければ、LIFFへ誘導するだけにする
+    if (!session) {
+      await replyMessage(event.replyToken, [
+        liffButtonMessage(
+          '手相を占う',
+          '手相を占うには、下のボタンをタップしてください。'
+        ),
+      ]);
+      return;
+    }
+
+    // 往復上限に達していたら、そこで会話を打ち切って新しい鑑定を促す
+    if (session.turnCount >= MAX_TURNS) {
+      await deleteSession(userId);
+      await replyMessage(event.replyToken, [
+        {
+          type: 'text',
+          text: 'このやりとりは一旦ここまでとさせていただきますね。また手のひらの写真を送って、新しく占ってみてください！',
+        },
+      ]);
+      return;
+    }
+
+    const replyText = await continueChat({
+      readingText: session.readingText,
+      worry: session.worry,
+      turns: session.turns,
+      userMessage: event.message.text,
+    });
+
+    await saveSession(userId, {
+      ...session,
+      turns: [
+        ...session.turns,
+        { role: 'user', content: event.message.text },
+        { role: 'assistant', content: replyText },
+      ],
+      turnCount: session.turnCount + 1,
+    });
+
+    await replyMessage(event.replyToken, [{ type: 'text', text: replyText }]);
   }
 }
 
