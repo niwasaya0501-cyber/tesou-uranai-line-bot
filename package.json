@@ -1,0 +1,12 @@
+{
+  "name": "tesou-uranai-line-bot",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": "20.x"
+  },
+  "dependencies": {
+    "openai": "^4.68.0",
+    "sharp": "^0.33.5"
+  }
+}

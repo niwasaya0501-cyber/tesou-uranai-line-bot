@@ -1,0 +1,66 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
+  background: #fdf6f0;
+  color: #333;
+  margin: 0;
+  padding: 24px 16px;
+}
+
+#app {
+  max-width: 420px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+h1 {
+  font-size: 1.4rem;
+  margin-bottom: 24px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.worry-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.worry-btn,
+#submit-btn,
+#close-btn,
+#retry-btn {
+  padding: 14px;
+  font-size: 1rem;
+  border: none;
+  border-radius: 12px;
+  background: #e8a0a0;
+  color: #fff;
+  cursor: pointer;
+}
+
+.worry-btn:active,
+#submit-btn:active {
+  opacity: 0.8;
+}
+
+#submit-btn:disabled {
+  background: #ccc;
+}
+
+#photo-input {
+  display: block;
+  margin: 16px auto;
+}
+
+#preview {
+  max-width: 100%;
+  border-radius: 8px;
+  margin-top: 12px;
+}
