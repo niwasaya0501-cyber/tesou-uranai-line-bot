@@ -24,9 +24,20 @@
 
     <section id="step-photo" class="hidden">
       <p>選んだ悩み：<span id="selected-worry"></span></p>
-      <p>手のひら全体が写る写真を選んでください</p>
-      <input type="file" id="photo-input" accept="image/*" />
-      <img id="preview" class="hidden" alt="選択した写真のプレビュー" />
+      <p>手のひら全体が写る写真を選んでください。<br />両手の写真を送ると、より詳しく鑑定できます（片手だけでも占えます）。</p>
+
+      <div class="photo-slot">
+        <p class="photo-slot-label">1枚目（必須）</p>
+        <input type="file" id="photo-input-1" accept="image/*" />
+        <img id="preview-1" class="hidden" alt="1枚目のプレビュー" />
+      </div>
+
+      <div class="photo-slot">
+        <p class="photo-slot-label">2枚目（任意・もう片方の手）</p>
+        <input type="file" id="photo-input-2" accept="image/*" />
+        <img id="preview-2" class="hidden" alt="2枚目のプレビュー" />
+      </div>
+
       <button type="button" id="submit-btn" disabled>この写真で占う</button>
     </section>
 

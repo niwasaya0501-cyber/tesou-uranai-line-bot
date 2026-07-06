@@ -54,12 +54,24 @@ h1 {
   background: #ccc;
 }
 
-#photo-input {
-  display: block;
-  margin: 16px auto;
+.photo-slot {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #eadfd7;
 }
 
-#preview {
+.photo-slot-label {
+  font-size: 0.85rem;
+  color: #777;
+  margin: 0 0 8px;
+}
+
+.photo-slot input[type="file"] {
+  display: block;
+  margin: 0 auto;
+}
+
+.photo-slot img {
   max-width: 100%;
   border-radius: 8px;
   margin-top: 12px;

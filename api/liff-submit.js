@@ -4,6 +4,7 @@ const { pushMessage } = require('../lib/line');
 
 // 手前でクライアント側リサイズ済みだが、念のため異常に大きいリクエストは弾く
 const MAX_INPUT_BYTES = 8 * 1024 * 1024;
+const MAX_IMAGES = 2;
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -11,7 +12,7 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const { userId, worry, imageBase64 } = req.body || {};
+  const { userId, worry, images } = req.body || {};
 
   if (!userId || typeof userId !== 'string' || !userId.startsWith('U')) {
     res.status(400).json({ error: 'invalid userId' });
@@ -21,31 +22,41 @@ module.exports = async (req, res) => {
     res.status(400).json({ error: 'invalid worry' });
     return;
   }
-  if (!imageBase64 || typeof imageBase64 !== 'string') {
-    res.status(400).json({ error: 'image is required' });
+  if (
+    !Array.isArray(images) ||
+    images.length < 1 ||
+    images.length > MAX_IMAGES ||
+    images.some((img) => typeof img !== 'string')
+  ) {
+    res.status(400).json({ error: `1〜${MAX_IMAGES}枚の画像が必要です` });
     return;
   }
 
   try {
-    const base64Data = imageBase64.includes(',')
-      ? imageBase64.split(',')[1]
-      : imageBase64;
-    const inputBuffer = Buffer.from(base64Data, 'base64');
+    const inputBuffers = images.map((imageBase64) => {
+      const base64Data = imageBase64.includes(',')
+        ? imageBase64.split(',')[1]
+        : imageBase64;
+      const buffer = Buffer.from(base64Data, 'base64');
 
-    if (inputBuffer.length > MAX_INPUT_BYTES) {
-      res.status(413).json({ error: 'image too large' });
-      return;
-    }
+      if (buffer.length > MAX_INPUT_BYTES) {
+        throw new Error('image too large');
+      }
 
-    const resizedBuffer = await resizeForVision(inputBuffer);
-    const resizedBase64 = resizedBuffer.toString('base64');
+      return buffer;
+    });
+
+    const resizedBuffers = await Promise.all(inputBuffers.map(resizeForVision));
+    const resizedBase64Images = resizedBuffers.map((buf) => buf.toString('base64'));
 
     // 画像の中身は記録せず、サイズだけログに残す（「読み取れません」が続く場合の切り分け用）
     console.log(
-      `liff-submit: input=${inputBuffer.length}bytes -> resized=${resizedBuffer.length}bytes, worry=${worry}`
+      `liff-submit: images=${resizedBuffers.length}, sizes=${resizedBuffers
+        .map((b) => `${b.length}bytes`)
+        .join(',')}, worry=${worry}`
     );
 
-    const resultText = await readPalm(resizedBase64, worry);
+    const resultText = await readPalm(resizedBase64Images, worry);
 
     await pushMessage(userId, resultText);
 

@@ -5,8 +5,10 @@
   const stepDone = document.getElementById('step-done');
   const stepError = document.getElementById('step-error');
   const selectedWorrySpan = document.getElementById('selected-worry');
-  const photoInput = document.getElementById('photo-input');
-  const preview = document.getElementById('preview');
+  const photoInput1 = document.getElementById('photo-input-1');
+  const photoInput2 = document.getElementById('photo-input-2');
+  const preview1 = document.getElementById('preview-1');
+  const preview2 = document.getElementById('preview-2');
   const submitBtn = document.getElementById('submit-btn');
   const closeBtn = document.getElementById('close-btn');
   const retryBtn = document.getElementById('retry-btn');
@@ -27,7 +29,8 @@
   const JPEG_QUALITY = 0.8;
 
   let selectedWorry = null;
-  let resizedDataUrl = null;
+  let resizedDataUrl1 = null;
+  let resizedDataUrl2 = null;
   let userId = null;
 
   function showStep(step) {
@@ -111,20 +114,32 @@
     });
   });
 
-  photoInput.addEventListener('change', async () => {
-    const file = photoInput.files[0];
+  photoInput1.addEventListener('change', async () => {
+    const file = photoInput1.files[0];
     if (!file) return;
 
-    resizedDataUrl = await resizeImageFile(file);
-    preview.src = resizedDataUrl;
-    preview.classList.remove('hidden');
+    resizedDataUrl1 = await resizeImageFile(file);
+    preview1.src = resizedDataUrl1;
+    preview1.classList.remove('hidden');
     submitBtn.disabled = false;
   });
 
+  photoInput2.addEventListener('change', async () => {
+    const file = photoInput2.files[0];
+    if (!file) return;
+
+    resizedDataUrl2 = await resizeImageFile(file);
+    preview2.src = resizedDataUrl2;
+    preview2.classList.remove('hidden');
+  });
+
   submitBtn.addEventListener('click', async () => {
-    if (!resizedDataUrl || !selectedWorry || !userId) return;
+    if (!resizedDataUrl1 || !selectedWorry || !userId) return;
 
     showStep(stepLoading);
+
+    const images = [resizedDataUrl1];
+    if (resizedDataUrl2) images.push(resizedDataUrl2);
 
     try {
       const res = await fetch('/api/liff-submit', {
@@ -133,7 +148,7 @@
         body: JSON.stringify({
           userId,
           worry: selectedWorry,
-          imageBase64: resizedDataUrl,
+          images,
         }),
       });
 
@@ -155,9 +170,12 @@
 
   retryBtn.addEventListener('click', () => {
     selectedWorry = null;
-    resizedDataUrl = null;
-    photoInput.value = '';
-    preview.classList.add('hidden');
+    resizedDataUrl1 = null;
+    resizedDataUrl2 = null;
+    photoInput1.value = '';
+    photoInput2.value = '';
+    preview1.classList.add('hidden');
+    preview2.classList.add('hidden');
     submitBtn.disabled = true;
     showStep(stepWorry);
   });
