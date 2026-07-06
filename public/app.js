@@ -10,8 +10,10 @@
   const otherWorryText = document.getElementById('other-worry-text');
   const otherWorrySubmit = document.getElementById('other-worry-submit');
   const otherWorryBack = document.getElementById('other-worry-back');
-  const photoInput1 = document.getElementById('photo-input-1');
-  const photoInput2 = document.getElementById('photo-input-2');
+  const photoInput1Camera = document.getElementById('photo-input-1-camera');
+  const photoInput1Gallery = document.getElementById('photo-input-1-gallery');
+  const photoInput2Camera = document.getElementById('photo-input-2-camera');
+  const photoInput2Gallery = document.getElementById('photo-input-2-gallery');
   const preview1 = document.getElementById('preview-1');
   const preview2 = document.getElementById('preview-2');
   const submitBtn = document.getElementById('submit-btn');
@@ -147,24 +149,32 @@
     otherWorryText.value = '';
   });
 
-  photoInput1.addEventListener('change', async () => {
-    const file = photoInput1.files[0];
-    if (!file) return;
+  function bindPhotoInput(inputEl, onResult) {
+    inputEl.addEventListener('change', async () => {
+      const file = inputEl.files[0];
+      if (!file) return;
 
-    resizedDataUrl1 = await resizeImageFile(file);
-    preview1.src = resizedDataUrl1;
+      onResult(await resizeImageFile(file));
+    });
+  }
+
+  function setPhoto1(dataUrl) {
+    resizedDataUrl1 = dataUrl;
+    preview1.src = dataUrl;
     preview1.classList.remove('hidden');
     submitBtn.disabled = false;
-  });
+  }
 
-  photoInput2.addEventListener('change', async () => {
-    const file = photoInput2.files[0];
-    if (!file) return;
-
-    resizedDataUrl2 = await resizeImageFile(file);
-    preview2.src = resizedDataUrl2;
+  function setPhoto2(dataUrl) {
+    resizedDataUrl2 = dataUrl;
+    preview2.src = dataUrl;
     preview2.classList.remove('hidden');
-  });
+  }
+
+  bindPhotoInput(photoInput1Camera, setPhoto1);
+  bindPhotoInput(photoInput1Gallery, setPhoto1);
+  bindPhotoInput(photoInput2Camera, setPhoto2);
+  bindPhotoInput(photoInput2Gallery, setPhoto2);
 
   submitBtn.addEventListener('click', async () => {
     if (!resizedDataUrl1 || !selectedWorry || !userId) return;
@@ -207,8 +217,10 @@
     selectedWorryText = null;
     resizedDataUrl1 = null;
     resizedDataUrl2 = null;
-    photoInput1.value = '';
-    photoInput2.value = '';
+    photoInput1Camera.value = '';
+    photoInput1Gallery.value = '';
+    photoInput2Camera.value = '';
+    photoInput2Gallery.value = '';
     preview1.classList.add('hidden');
     preview2.classList.add('hidden');
     submitBtn.disabled = true;

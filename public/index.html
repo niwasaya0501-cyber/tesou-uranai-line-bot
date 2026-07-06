@@ -35,13 +35,23 @@
 
       <div class="photo-slot">
         <p class="photo-slot-label">1枚目（必須）</p>
-        <input type="file" id="photo-input-1" accept="image/*" />
+        <div class="photo-input-row">
+          <label class="photo-input-btn" for="photo-input-1-camera">写真を撮る</label>
+          <input type="file" id="photo-input-1-camera" accept="image/*" capture="environment" class="visually-hidden" />
+          <label class="photo-input-btn secondary" for="photo-input-1-gallery">アルバムから選ぶ</label>
+          <input type="file" id="photo-input-1-gallery" accept="image/*" class="visually-hidden" />
+        </div>
         <img id="preview-1" class="hidden" alt="1枚目のプレビュー" />
       </div>
 
       <div class="photo-slot">
         <p class="photo-slot-label">2枚目（任意・もう片方の手）</p>
-        <input type="file" id="photo-input-2" accept="image/*" />
+        <div class="photo-input-row">
+          <label class="photo-input-btn" for="photo-input-2-camera">写真を撮る</label>
+          <input type="file" id="photo-input-2-camera" accept="image/*" capture="environment" class="visually-hidden" />
+          <label class="photo-input-btn secondary" for="photo-input-2-gallery">アルバムから選ぶ</label>
+          <input type="file" id="photo-input-2-gallery" accept="image/*" class="visually-hidden" />
+        </div>
         <img id="preview-2" class="hidden" alt="2枚目のプレビュー" />
       </div>
 
