@@ -35,7 +35,9 @@ h1 {
 .worry-btn,
 #submit-btn,
 #close-btn,
-#retry-btn {
+#retry-btn,
+#other-worry-submit,
+#other-worry-back {
   padding: 14px;
   font-size: 1rem;
   border: none;
@@ -43,6 +45,32 @@ h1 {
   background: #e8a0a0;
   color: #fff;
   cursor: pointer;
+}
+
+#other-worry-form {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #eadfd7;
+}
+
+#other-worry-text {
+  display: block;
+  width: 100%;
+  margin: 8px 0 12px;
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+
+#other-worry-submit {
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+#other-worry-back {
+  width: 100%;
+  background: #ccc;
 }
 
 .worry-btn:active,

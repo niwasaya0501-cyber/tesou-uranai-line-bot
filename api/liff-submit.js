@@ -6,6 +6,7 @@ const { saveSession } = require('../lib/conversation');
 // 手前でクライアント側リサイズ済みだが、念のため異常に大きいリクエストは弾く
 const MAX_INPUT_BYTES = 8 * 1024 * 1024;
 const MAX_IMAGES = 2;
+const MAX_WORRY_TEXT_LENGTH = 100;
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -14,6 +15,7 @@ module.exports = async (req, res) => {
   }
 
   const { userId, worry, images } = req.body || {};
+  let { worryText } = req.body || {};
 
   if (!userId || typeof userId !== 'string' || !userId.startsWith('U')) {
     res.status(400).json({ error: 'invalid userId' });
@@ -22,6 +24,15 @@ module.exports = async (req, res) => {
   if (!worry || !WORRY_LABELS[worry]) {
     res.status(400).json({ error: 'invalid worry' });
     return;
+  }
+  if (worry === 'other') {
+    if (typeof worryText !== 'string' || !worryText.trim()) {
+      res.status(400).json({ error: 'worryText is required when worry is "other"' });
+      return;
+    }
+    worryText = worryText.trim().slice(0, MAX_WORRY_TEXT_LENGTH);
+  } else {
+    worryText = null;
   }
   if (
     !Array.isArray(images) ||
@@ -57,7 +68,7 @@ module.exports = async (req, res) => {
         .join(',')}, worry=${worry}`
     );
 
-    const resultText = await readPalm(resizedBase64Images, worry);
+    const resultText = await readPalm(resizedBase64Images, worry, worryText);
 
     await pushMessage(userId, resultText);
 
@@ -66,6 +77,7 @@ module.exports = async (req, res) => {
     try {
       await saveSession(userId, {
         worry,
+        worryText,
         readingText: resultText,
         turns: [],
         turnCount: 0,

@@ -13,12 +13,19 @@
 
     <section id="step-worry">
       <p>今、気になっていることは？</p>
-      <div class="worry-list">
+      <div id="worry-buttons" class="worry-list">
         <button type="button" class="worry-btn" data-worry="love">恋愛</button>
         <button type="button" class="worry-btn" data-worry="work">仕事</button>
         <button type="button" class="worry-btn" data-worry="relationship">人間関係</button>
         <button type="button" class="worry-btn" data-worry="self">自己分析</button>
         <button type="button" class="worry-btn" data-worry="other">その他</button>
+      </div>
+
+      <div id="other-worry-form" class="hidden">
+        <p class="photo-slot-label">気になっていることを入力してください</p>
+        <input type="text" id="other-worry-text" maxlength="40" placeholder="例：転職について" />
+        <button type="button" id="other-worry-submit">次へ</button>
+        <button type="button" id="other-worry-back">戻る</button>
       </div>
     </section>
 

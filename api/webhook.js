@@ -84,6 +84,7 @@ async function handleEvent(event) {
     const replyText = await continueChat({
       readingText: session.readingText,
       worry: session.worry,
+      worryText: session.worryText,
       turns: session.turns,
       userMessage: event.message.text,
     });

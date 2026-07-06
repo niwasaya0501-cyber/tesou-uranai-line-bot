@@ -5,6 +5,11 @@
   const stepDone = document.getElementById('step-done');
   const stepError = document.getElementById('step-error');
   const selectedWorrySpan = document.getElementById('selected-worry');
+  const worryButtons = document.getElementById('worry-buttons');
+  const otherWorryForm = document.getElementById('other-worry-form');
+  const otherWorryText = document.getElementById('other-worry-text');
+  const otherWorrySubmit = document.getElementById('other-worry-submit');
+  const otherWorryBack = document.getElementById('other-worry-back');
   const photoInput1 = document.getElementById('photo-input-1');
   const photoInput2 = document.getElementById('photo-input-2');
   const preview1 = document.getElementById('preview-1');
@@ -29,6 +34,7 @@
   const JPEG_QUALITY = 0.8;
 
   let selectedWorry = null;
+  let selectedWorryText = null;
   let resizedDataUrl1 = null;
   let resizedDataUrl2 = null;
   let userId = null;
@@ -108,10 +114,37 @@
 
   document.querySelectorAll('.worry-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
+      if (btn.dataset.worry === 'other') {
+        worryButtons.classList.add('hidden');
+        otherWorryForm.classList.remove('hidden');
+        otherWorryText.focus();
+        return;
+      }
+
       selectedWorry = btn.dataset.worry;
+      selectedWorryText = null;
       selectedWorrySpan.textContent = WORRY_LABELS[selectedWorry];
       showStep(stepPhoto);
     });
+  });
+
+  otherWorrySubmit.addEventListener('click', () => {
+    const text = otherWorryText.value.trim();
+    if (!text) {
+      otherWorryText.focus();
+      return;
+    }
+
+    selectedWorry = 'other';
+    selectedWorryText = text;
+    selectedWorrySpan.textContent = text;
+    showStep(stepPhoto);
+  });
+
+  otherWorryBack.addEventListener('click', () => {
+    otherWorryForm.classList.add('hidden');
+    worryButtons.classList.remove('hidden');
+    otherWorryText.value = '';
   });
 
   photoInput1.addEventListener('change', async () => {
@@ -148,6 +181,7 @@
         body: JSON.stringify({
           userId,
           worry: selectedWorry,
+          worryText: selectedWorryText,
           images,
         }),
       });
@@ -170,6 +204,7 @@
 
   retryBtn.addEventListener('click', () => {
     selectedWorry = null;
+    selectedWorryText = null;
     resizedDataUrl1 = null;
     resizedDataUrl2 = null;
     photoInput1.value = '';
@@ -177,6 +212,9 @@
     preview1.classList.add('hidden');
     preview2.classList.add('hidden');
     submitBtn.disabled = true;
+    otherWorryForm.classList.add('hidden');
+    otherWorryText.value = '';
+    worryButtons.classList.remove('hidden');
     showStep(stepWorry);
   });
 
