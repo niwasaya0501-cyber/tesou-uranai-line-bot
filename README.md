@@ -108,7 +108,7 @@ Messaging APIチャンネルの管理画面には「LIFF」というタブ自体
 2. **`Create Database`**（データベースを作成）→ **`Upstash`** → **`Redis`** を選択
 3. 無料プラン（Free）のまま、リージョンなどはデフォルトで作成
 4. 作成後、対象のVercelプロジェクト（`tesou-uranai-line-bot-iqyz`）に **`Connect`**（接続）する
-5. 接続すると、`UPSTASH_REDIS_REST_URL` と `UPSTASH_REDIS_REST_TOKEN` という2つの環境変数が、そのプロジェクトに自動で追加されます（手動でコピーする必要はありません）
+5. 接続すると、`KV_REST_API_URL` と `KV_REST_API_TOKEN` という2つの環境変数が、そのプロジェクトに自動で追加されます（手動でコピーする必要はありません）
 6. ローカルでも動作確認したい場合は、Redisデータベースの画面にある「.env」タブ等からこの2つの値を確認し、ローカルの`.env`にも追記してください
 
 ## 4. Vercelへのデプロイ
@@ -133,7 +133,7 @@ vercel env add OPENAI_API_KEY
 vercel env add LIFF_ID
 ```
 
-（`UPSTASH_REDIS_REST_URL` と `UPSTASH_REDIS_REST_TOKEN` は、3章でVercelプロジェクトに接続していれば自動で追加済みです）
+（`KV_REST_API_URL` と `KV_REST_API_TOKEN` は、3章でVercelプロジェクトに接続していれば自動で追加済みです）
 
 （`.env.example` を参考に、Production / Preview / Development すべてに登録してください）
 
@@ -170,8 +170,8 @@ vercel --prod
 | `LINE_CHANNEL_ACCESS_TOKEN` | 長期チャンネルアクセストークン | LINE Developers > Messaging APIチャンネル > Messaging API設定 |
 | `OPENAI_API_KEY` | OpenAI APIキー | OpenAI Platform > API keys |
 | `LIFF_ID` | LIFFアプリのID | LINE Developers > LINEログインチャンネル > LIFF |
-| `UPSTASH_REDIS_REST_URL` | 会話セッション保存用RedisのURL | Vercel > Storage > 作成したUpstash Redis |
-| `UPSTASH_REDIS_REST_TOKEN` | 同上のアクセストークン | Vercel > Storage > 作成したUpstash Redis |
+| `KV_REST_API_URL` | 会話セッション保存用RedisのURL | Vercel > Storage > 作成したUpstash Redis |
+| `KV_REST_API_TOKEN` | 同上のアクセストークン | Vercel > Storage > 作成したUpstash Redis |
 
 ## 7. コストに関する注意
 
@@ -200,7 +200,7 @@ vercel --prod
 | 「結果をLINEに送りました」と出るのにLINEに届かない | ユーザーが公式アカウントを友だち追加していない、またはブロックしている | 友だち追加状態を確認 |
 | 鑑定に時間がかかりタイムアウトする | 画像サイズが大きい／Vercelプランの実行時間上限 | `vercel.json`の`maxDuration`を確認し、プランの上限内に収まっているか確認 |
 | OpenAIの応答が毎回「もう一度送ってください」になる | 手のひら全体が写っていない、または暗すぎる/ぶれている | 明るい場所で手のひら全体が写るように撮影し直す |
-| 鑑定後にLINEでメッセージを送っても「LIFFを開いてください」としか返らない | `UPSTASH_REDIS_REST_URL`/`TOKEN`が未設定、またはセッションが24時間で期限切れ | 環境変数を確認して再デプロイ。期限切れの場合は新しく鑑定し直す |
+| 鑑定後にLINEでメッセージを送っても「LIFFを開いてください」としか返らない | `KV_REST_API_URL`/`TOKEN`が未設定、またはセッションが24時間で期限切れ | 環境変数を確認して再デプロイ。期限切れの場合は新しく鑑定し直す |
 
 ## 10. 悩みの選択肢を変更したい場合
 
