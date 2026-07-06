@@ -73,10 +73,10 @@ async function handleEvent(event) {
         console.error('deleteSession error:', err);
       }
       await replyMessage(event.replyToken, [
-        {
-          type: 'text',
-          text: 'このやりとりは一旦ここまでとさせていただきますね。また手のひらの写真を送って、新しく占ってみてください！',
-        },
+        liffButtonMessage(
+          '手相を占う',
+          'このやりとりは一旦ここまでとさせていただきますね。また下のボタンから、新しく手相を占ってみてください！'
+        ),
       ]);
       return;
     }
