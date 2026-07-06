@@ -37,27 +37,43 @@
     step.classList.remove('hidden');
   }
 
-  function resizeImageFile(file) {
+  function drawToCanvas(source, sourceWidth, sourceHeight) {
+    let width = sourceWidth;
+    let height = sourceHeight;
+    if (width > height && width > MAX_DIMENSION) {
+      height = Math.round((height * MAX_DIMENSION) / width);
+      width = MAX_DIMENSION;
+    } else if (height >= width && height > MAX_DIMENSION) {
+      width = Math.round((width * MAX_DIMENSION) / height);
+      height = MAX_DIMENSION;
+    }
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    canvas.getContext('2d').drawImage(source, 0, 0, width, height);
+    return canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+  }
+
+  // iPhoneの縦向き写真などはEXIFに回転情報が入っており、
+  // それを無視して描画すると横向き・逆さまの画像になってしまう。
+  // createImageBitmapのimageOrientation: 'from-image'は、EXIFの向きを見て
+  // 正しい向きのビットマップにデコードしてくれるため、これを優先的に使う。
+  // 対応していない古いブラウザ向けにImage要素での読み込みをフォールバックとして残す。
+  async function resizeImageFile(file) {
+    if (typeof createImageBitmap === 'function') {
+      try {
+        const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+        return drawToCanvas(bitmap, bitmap.width, bitmap.height);
+      } catch (err) {
+        console.warn('createImageBitmap failed, falling back to Image element:', err);
+      }
+    }
+
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = () => {
         const img = new Image();
-        img.onload = () => {
-          let { width, height } = img;
-          if (width > height && width > MAX_DIMENSION) {
-            height = Math.round((height * MAX_DIMENSION) / width);
-            width = MAX_DIMENSION;
-          } else if (height >= width && height > MAX_DIMENSION) {
-            width = Math.round((width * MAX_DIMENSION) / height);
-            height = MAX_DIMENSION;
-          }
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, width, height);
-          resolve(canvas.toDataURL('image/jpeg', JPEG_QUALITY));
-        };
+        img.onload = () => resolve(drawToCanvas(img, img.width, img.height));
         img.onerror = reject;
         img.src = reader.result;
       };

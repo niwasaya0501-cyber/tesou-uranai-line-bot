@@ -40,6 +40,11 @@ module.exports = async (req, res) => {
     const resizedBuffer = await resizeForVision(inputBuffer);
     const resizedBase64 = resizedBuffer.toString('base64');
 
+    // 画像の中身は記録せず、サイズだけログに残す（「読み取れません」が続く場合の切り分け用）
+    console.log(
+      `liff-submit: input=${inputBuffer.length}bytes -> resized=${resizedBuffer.length}bytes, worry=${worry}`
+    );
+
     const resultText = await readPalm(resizedBase64, worry);
 
     await pushMessage(userId, resultText);
