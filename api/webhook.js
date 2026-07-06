@@ -42,7 +42,17 @@ async function handleEvent(event) {
 
   if (event.type === 'message' && event.message.type === 'text') {
     const userId = event.source.userId;
-    const session = userId ? await getSession(userId) : null;
+
+    // Redis(Upstash)の障害・設定不備でここが失敗しても、
+    // 「セッションなし」として扱いLIFF誘導を返す(無反応にしない)
+    let session = null;
+    if (userId) {
+      try {
+        session = await getSession(userId);
+      } catch (err) {
+        console.error('getSession error:', err);
+      }
+    }
 
     // 直前に鑑定したセッションがなければ、LIFFへ誘導するだけにする
     if (!session) {
@@ -57,7 +67,11 @@ async function handleEvent(event) {
 
     // 往復上限に達していたら、そこで会話を打ち切って新しい鑑定を促す
     if (session.turnCount >= MAX_TURNS) {
-      await deleteSession(userId);
+      try {
+        await deleteSession(userId);
+      } catch (err) {
+        console.error('deleteSession error:', err);
+      }
       await replyMessage(event.replyToken, [
         {
           type: 'text',
@@ -74,15 +88,20 @@ async function handleEvent(event) {
       userMessage: event.message.text,
     });
 
-    await saveSession(userId, {
-      ...session,
-      turns: [
-        ...session.turns,
-        { role: 'user', content: event.message.text },
-        { role: 'assistant', content: replyText },
-      ],
-      turnCount: session.turnCount + 1,
-    });
+    // 保存が失敗しても、既に生成できた返信は届ける(次回以降の文脈は引き継げないだけにする)
+    try {
+      await saveSession(userId, {
+        ...session,
+        turns: [
+          ...session.turns,
+          { role: 'user', content: event.message.text },
+          { role: 'assistant', content: replyText },
+        ],
+        turnCount: session.turnCount + 1,
+      });
+    } catch (err) {
+      console.error('saveSession error:', err);
+    }
 
     await replyMessage(event.replyToken, [{ type: 'text', text: replyText }]);
   }
