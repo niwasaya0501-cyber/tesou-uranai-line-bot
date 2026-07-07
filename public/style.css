@@ -40,6 +40,10 @@ h1 {
   font-size: 0.95rem;
 }
 
+.step-description {
+  color: #7a5a94;
+}
+
 .hidden {
   display: none !important;
 }
