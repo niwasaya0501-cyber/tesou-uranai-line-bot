@@ -64,6 +64,36 @@ function liffButtonMessage(altText, text, baseUrl) {
   };
 }
 
+// ラリーの返信ごとに添える、ボタンだけの軽量なFlex Message
+// （バナー画像付きのliffButtonMessageだと、返信の度に毎回大きなカードが出て重くなるため）
+function liffButtonOnly(label) {
+  return {
+    type: 'flex',
+    altText: label,
+    contents: {
+      type: 'bubble',
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#F8EEF8',
+        paddingAll: '16px',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#6A3F96',
+            action: {
+              type: 'uri',
+              label,
+              uri: `https://liff.line.me/${process.env.LIFF_ID}`,
+            },
+          },
+        ],
+      },
+    },
+  };
+}
+
 async function handleEvent(event, baseUrl) {
   if (event.type === 'follow') {
     await replyMessage(event.replyToken, [
@@ -157,10 +187,11 @@ async function handleEvent(event, baseUrl) {
     }
 
     // トーク履歴を消してセッションが見えなくなっていても迷わないよう、
-    // 会話継続の返信には毎回LIFFへのリンクを添える
-    const replyWithLiffLink = `${replyText}\n\n（新しく占いたいときは、いつでもこちらからどうぞ）\nhttps://liff.line.me/${process.env.LIFF_ID}`;
-
-    await replyMessage(event.replyToken, [{ type: 'text', text: replyWithLiffLink }]);
+    // 会話継続の返信には毎回LIFFを開くボタンを添える(生のURLテキストではなく)
+    await replyMessage(event.replyToken, [
+      { type: 'text', text: replyText },
+      liffButtonOnly('新しく占う'),
+    ]);
   }
 }
 
