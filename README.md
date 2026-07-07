@@ -18,7 +18,9 @@ LINE公式アカウントに送った手のひらの写真を、OpenAI (gpt-4o-m
 ├── public/
 │   ├── index.html         # LIFF画面（悩み5択＋画像選択）
 │   ├── app.js              # LIFF初期化／送信処理
-│   └── style.css
+│   ├── style.css
+│   └── images/
+│       └── line-banner.jpg  # LINE Flex Messageのヘッダー画像（紫と月のテーマ）
 ├── .env.example
 ├── package.json
 ├── vercel.json

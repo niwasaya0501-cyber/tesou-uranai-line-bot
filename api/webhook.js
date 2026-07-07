@@ -11,30 +11,66 @@ function readRawBody(req) {
   });
 }
 
-function liffButtonMessage(altText, text) {
+// LINEの「ボタンテンプレート」はボタンの色や背景色を変更できないため、
+// より柔軟に装飾できるFlex Messageで、紫と月をテーマにしたデザインにしている
+function liffButtonMessage(altText, text, baseUrl) {
   return {
-    type: 'template',
+    type: 'flex',
     altText,
-    template: {
-      type: 'buttons',
-      text,
-      actions: [
-        {
-          type: 'uri',
-          label: '手相を占う',
-          uri: `https://liff.line.me/${process.env.LIFF_ID}`,
-        },
-      ],
+    contents: {
+      type: 'bubble',
+      hero: {
+        type: 'image',
+        url: `${baseUrl}/images/line-banner.jpg`,
+        size: 'full',
+        aspectRatio: '3:2',
+        aspectMode: 'cover',
+      },
+      body: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#F8EEF8',
+        paddingAll: '20px',
+        contents: [
+          {
+            type: 'text',
+            text,
+            wrap: true,
+            color: '#7A5A94',
+            size: 'sm',
+          },
+        ],
+      },
+      footer: {
+        type: 'box',
+        layout: 'vertical',
+        backgroundColor: '#F8EEF8',
+        paddingAll: '12px',
+        paddingTop: '0px',
+        contents: [
+          {
+            type: 'button',
+            style: 'primary',
+            color: '#6A3F96',
+            action: {
+              type: 'uri',
+              label: '手相を占う',
+              uri: `https://liff.line.me/${process.env.LIFF_ID}`,
+            },
+          },
+        ],
+      },
     },
   };
 }
 
-async function handleEvent(event) {
+async function handleEvent(event, baseUrl) {
   if (event.type === 'follow') {
     await replyMessage(event.replyToken, [
       liffButtonMessage(
         '友だち追加ありがとうございます！',
-        '友だち追加ありがとうございます！\n下のボタンから手のひらの写真を送って、手相を占ってみましょう。'
+        '友だち追加ありがとうございます！\n下のボタンから手のひらの写真を送って、手相を占ってみましょう。',
+        baseUrl
       ),
     ]);
     return;
@@ -59,7 +95,8 @@ async function handleEvent(event) {
       await replyMessage(event.replyToken, [
         liffButtonMessage(
           '手相を占う',
-          '手相を占うには、下のボタンをタップしてください。'
+          '手相を占うには、下のボタンをタップしてください。',
+          baseUrl
         ),
       ]);
       return;
@@ -75,7 +112,8 @@ async function handleEvent(event) {
       await replyMessage(event.replyToken, [
         liffButtonMessage(
           '手相を占う',
-          'このやりとりは一旦ここまでとさせていただきますね。また下のボタンから、新しく手相を占ってみてください！'
+          'このやりとりは一旦ここまでとさせていただきますね。また下のボタンから、新しく手相を占ってみてください！',
+          baseUrl
         ),
       ]);
       return;
@@ -126,7 +164,11 @@ async function handler(req, res) {
     const body = JSON.parse(rawBody.toString('utf-8'));
     const events = body.events || [];
 
-    await Promise.all(events.map(handleEvent));
+    // バナー画像のURLを組み立てるため、リクエストされたホスト名を使う
+    // （カスタムドメインに変更しても自動で追従する）
+    const baseUrl = `https://${req.headers.host}`;
+
+    await Promise.all(events.map((event) => handleEvent(event, baseUrl)));
 
     res.status(200).send('OK');
   } catch (err) {
