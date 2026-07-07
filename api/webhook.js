@@ -64,36 +64,6 @@ function liffButtonMessage(altText, text, baseUrl) {
   };
 }
 
-// ラリーの返信ごとに添える、ボタンだけの軽量なFlex Message
-// （バナー画像付きのliffButtonMessageだと、返信の度に毎回大きなカードが出て重くなるため）
-function liffButtonOnly(label) {
-  return {
-    type: 'flex',
-    altText: label,
-    contents: {
-      type: 'bubble',
-      body: {
-        type: 'box',
-        layout: 'vertical',
-        backgroundColor: '#F8EEF8',
-        paddingAll: '16px',
-        contents: [
-          {
-            type: 'button',
-            style: 'primary',
-            color: '#6A3F96',
-            action: {
-              type: 'uri',
-              label,
-              uri: `https://liff.line.me/${process.env.LIFF_ID}`,
-            },
-          },
-        ],
-      },
-    },
-  };
-}
-
 async function handleEvent(event, baseUrl) {
   if (event.type === 'follow') {
     await replyMessage(event.replyToken, [
@@ -186,12 +156,9 @@ async function handleEvent(event, baseUrl) {
       console.error('saveSession error:', err);
     }
 
-    // トーク履歴を消してセッションが見えなくなっていても迷わないよう、
-    // 会話継続の返信には毎回LIFFを開くボタンを添える(生のURLテキストではなく)
-    await replyMessage(event.replyToken, [
-      { type: 'text', text: replyText },
-      liffButtonOnly('新しく占う'),
-    ]);
+    // ラリーの途中では「もう終わり？」と紛らわしくなるため、LIFFボタンは
+    // 10往復に達した終了メッセージの時だけ表示し、通常の返信はテキストのみにする
+    await replyMessage(event.replyToken, [{ type: 'text', text: replyText }]);
   }
 }
 
