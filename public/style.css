@@ -4,7 +4,7 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", sans-serif;
-  background: #fdf6f0;
+  background: linear-gradient(160deg, #faf3fb 0%, #fbeef2 55%, #f5e9f2 100%);
   color: #333;
   margin: 0;
   padding: 24px 16px;
@@ -16,9 +16,28 @@ body {
   text-align: center;
 }
 
+/* 明朝体＋紫で、水晶玉テーマ（mystic-title等）と統一感を持たせる */
+h1,
+.step-heading {
+  font-family: "Hiragino Mincho ProN", "Yu Mincho", "YuMincho", serif;
+  color: #6a3f96;
+}
+
 h1 {
-  font-size: 1.4rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   margin-bottom: 24px;
+}
+
+.step-heading {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.step-heading-sub {
+  font-size: 0.95rem;
 }
 
 .hidden {
@@ -41,7 +60,7 @@ h1 {
   font-size: 1rem;
   border: none;
   border-radius: 12px;
-  background: #e8a0a0;
+  background: linear-gradient(135deg, #a377c9, #6a3f96);
   color: #fff;
   cursor: pointer;
 }
@@ -69,7 +88,8 @@ h1 {
 
 #other-worry-back {
   width: 100%;
-  background: #ccc;
+  background: #e6d9ef;
+  color: #6a3f96;
 }
 
 .worry-btn:active,
