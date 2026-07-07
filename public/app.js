@@ -4,6 +4,7 @@
   const stepLoading = document.getElementById('step-loading');
   const stepDone = document.getElementById('step-done');
   const stepError = document.getElementById('step-error');
+  const stepUnreadable = document.getElementById('step-unreadable');
   const selectedWorrySpan = document.getElementById('selected-worry');
   const worryButtons = document.getElementById('worry-buttons');
   const otherWorryForm = document.getElementById('other-worry-form');
@@ -25,6 +26,7 @@
   const submitBtn = document.getElementById('submit-btn');
   const closeBtn = document.getElementById('close-btn');
   const retryBtn = document.getElementById('retry-btn');
+  const rereadBtn = document.getElementById('reread-btn');
   const errorMessage = document.getElementById('error-message');
   const pageTitle = document.getElementById('page-title');
 
@@ -51,7 +53,7 @@
   let activeCameraSlot = null;
 
   function showStep(step) {
-    [stepWorry, stepPhoto, stepLoading, stepDone, stepError].forEach((el) => {
+    [stepWorry, stepPhoto, stepLoading, stepDone, stepError, stepUnreadable].forEach((el) => {
       el.classList.add('hidden');
     });
     step.classList.remove('hidden');
@@ -265,7 +267,8 @@
         throw new Error(`submit failed: ${res.status}`);
       }
 
-      showStep(stepDone);
+      const data = await res.json();
+      showStep(data.unreadable ? stepUnreadable : stepDone);
     } catch (err) {
       console.error(err);
       errorMessage.textContent = 'エラーが発生しました。もう一度お試しください。';
@@ -277,10 +280,7 @@
     liff.closeWindow();
   });
 
-  retryBtn.addEventListener('click', () => {
-    closeCameraModal();
-    selectedWorry = null;
-    selectedWorryText = null;
+  function resetPhotos() {
     resizedDataUrl1 = null;
     resizedDataUrl2 = null;
     photoInput1Camera.value = '';
@@ -290,10 +290,23 @@
     preview1.classList.add('hidden');
     preview2.classList.add('hidden');
     submitBtn.disabled = true;
+  }
+
+  retryBtn.addEventListener('click', () => {
+    closeCameraModal();
+    selectedWorry = null;
+    selectedWorryText = null;
+    resetPhotos();
     otherWorryForm.classList.add('hidden');
     otherWorryText.value = '';
     worryButtons.classList.remove('hidden');
     showStep(stepWorry);
+  });
+
+  // 手相が読み取れなかった場合は、悩みの選択はそのままに写真だけ撮り直してもらう
+  rereadBtn.addEventListener('click', () => {
+    resetPhotos();
+    showStep(stepPhoto);
   });
 
   init();

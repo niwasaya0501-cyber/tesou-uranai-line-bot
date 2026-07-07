@@ -58,6 +58,7 @@ h1 {
 .worry-btn,
 #submit-btn,
 #retry-btn,
+#reread-btn,
 #other-worry-submit,
 #other-worry-back {
   padding: 14px;
@@ -101,7 +102,8 @@ h1 {
   opacity: 0.8;
 }
 
-#submit-btn {
+#submit-btn,
+#reread-btn {
   margin-top: 20px;
 }
 

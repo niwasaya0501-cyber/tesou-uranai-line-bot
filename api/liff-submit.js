@@ -1,6 +1,6 @@
 const { resizeForVision } = require('../lib/image');
-const { readPalm, WORRY_LABELS, UNREADABLE_MESSAGE, buildFollowUpInvite } = require('../lib/openai');
-const { pushMessage, pushMessages, buildContinueQuickReply } = require('../lib/line');
+const { readPalm, WORRY_LABELS, buildFollowUpInvite } = require('../lib/openai');
+const { pushMessages, buildContinueQuickReply } = require('../lib/line');
 const { saveSession } = require('../lib/conversation');
 
 // 手前でクライアント側リサイズ済みだが、念のため異常に大きいリクエストは弾く
@@ -68,40 +68,39 @@ module.exports = async (req, res) => {
         .join(',')}, worry=${worry}`
     );
 
-    const resultText = await readPalm(resizedBase64Images, worry, worryText);
-    const isUnreadable = resultText.includes(UNREADABLE_MESSAGE);
+    const result = await readPalm(resizedBase64Images, worry, worryText);
 
-    // 読み取れなかった場合は「続けて質問できます」の案内は不要なので、鑑定結果のみ送る
-    if (isUnreadable) {
-      await pushMessage(userId, resultText);
-    } else {
-      await pushMessages(userId, [
-        { type: 'text', text: resultText },
-        {
-          type: 'text',
-          text: buildFollowUpInvite(worry, worryText),
-          quickReply: buildContinueQuickReply(),
-        },
-      ]);
+    // 読み取れなかった場合はLINEには何も送らず、LIFF側で直接撮り直しを促す
+    // （呼び出し元はこのレスポンスを待ってから完了画面を出すため、フロントで判定できる）
+    if (!result.readable) {
+      res.status(200).json({ ok: true, unreadable: true });
+      return;
     }
 
-    // 読み取れた場合のみ、この後LINEのトークで続きの質問ができるようセッションを保存する。
+    await pushMessages(userId, [
+      { type: 'text', text: result.text },
+      {
+        type: 'text',
+        text: buildFollowUpInvite(worry, worryText),
+        quickReply: buildContinueQuickReply(),
+      },
+    ]);
+
+    // この後LINEのトークで続きの質問ができるようセッションを保存する。
     // ここが失敗しても鑑定結果自体は既に届いているので、レスポンスは成功のままにする
-    if (!isUnreadable) {
-      try {
-        await saveSession(userId, {
-          worry,
-          worryText,
-          readingText: resultText,
-          turns: [],
-          turnCount: 0,
-        });
-      } catch (sessionErr) {
-        console.error('saveSession error:', sessionErr);
-      }
+    try {
+      await saveSession(userId, {
+        worry,
+        worryText,
+        readingText: result.text,
+        turns: [],
+        turnCount: 0,
+      });
+    } catch (sessionErr) {
+      console.error('saveSession error:', sessionErr);
     }
 
-    res.status(200).json({ ok: true });
+    res.status(200).json({ ok: true, unreadable: false });
   } catch (err) {
     console.error('liff-submit error:', err);
     res.status(500).json({ error: 'internal error' });
