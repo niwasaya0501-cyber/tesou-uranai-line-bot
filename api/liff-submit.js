@@ -1,27 +1,7 @@
 const { resizeForVision } = require('../lib/image');
 const { readPalm, WORRY_LABELS, UNREADABLE_MESSAGE, buildFollowUpInvite } = require('../lib/openai');
-const { pushMessage, pushMessages } = require('../lib/line');
+const { pushMessage, pushMessages, buildContinueQuickReply } = require('../lib/line');
 const { saveSession } = require('../lib/conversation');
-
-// 鑑定結果の案内メッセージに添える「続きを話す／新しく占う」の2択
-function buildContinueQuickReply() {
-  return {
-    items: [
-      {
-        type: 'action',
-        action: { type: 'message', label: '続きを話す', text: '続きを聞きたいです' },
-      },
-      {
-        type: 'action',
-        action: {
-          type: 'uri',
-          label: '新しく占う',
-          uri: `https://liff.line.me/${process.env.LIFF_ID}`,
-        },
-      },
-    ],
-  };
-}
 
 // 手前でクライアント側リサイズ済みだが、念のため異常に大きいリクエストは弾く
 const MAX_INPUT_BYTES = 8 * 1024 * 1024;

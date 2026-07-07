@@ -1,4 +1,4 @@
-const { verifySignature, replyMessage } = require('../lib/line');
+const { verifySignature, replyMessage, buildContinueQuickReply } = require('../lib/line');
 const { continueChat } = require('../lib/openai');
 const { getSession, saveSession, deleteSession, MAX_TURNS } = require('../lib/conversation');
 
@@ -156,9 +156,11 @@ async function handleEvent(event, baseUrl) {
       console.error('saveSession error:', err);
     }
 
-    // ラリーの途中では「もう終わり？」と紛らわしくなるため、LIFFボタンは
-    // 10往復に達した終了メッセージの時だけ表示し、通常の返信はテキストのみにする
-    await replyMessage(event.replyToken, [{ type: 'text', text: replyText }]);
+    // 「終わり？」と紛らわしくなる大きなボタン付きメッセージは出さず、
+    // 目立たないクイックリプライで「続きを聞く／新しくする」を毎回選べるようにする
+    await replyMessage(event.replyToken, [
+      { type: 'text', text: replyText, quickReply: buildContinueQuickReply() },
+    ]);
   }
 }
 
