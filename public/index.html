@@ -36,7 +36,7 @@
       <div class="photo-slot">
         <p class="photo-slot-label">1枚目（必須）</p>
         <div class="photo-input-row">
-          <label class="photo-input-btn" for="photo-input-1-camera">写真を撮る</label>
+          <button type="button" class="photo-input-btn" id="photo-camera-btn-1">写真を撮る</button>
           <input type="file" id="photo-input-1-camera" accept="image/*" capture="environment" class="visually-hidden" />
           <label class="photo-input-btn secondary" for="photo-input-1-gallery">アルバムから選ぶ</label>
           <input type="file" id="photo-input-1-gallery" accept="image/*" class="visually-hidden" />
@@ -47,7 +47,7 @@
       <div class="photo-slot">
         <p class="photo-slot-label">2枚目（任意・もう片方の手）</p>
         <div class="photo-input-row">
-          <label class="photo-input-btn" for="photo-input-2-camera">写真を撮る</label>
+          <button type="button" class="photo-input-btn" id="photo-camera-btn-2">写真を撮る</button>
           <input type="file" id="photo-input-2-camera" accept="image/*" capture="environment" class="visually-hidden" />
           <label class="photo-input-btn secondary" for="photo-input-2-gallery">アルバムから選ぶ</label>
           <input type="file" id="photo-input-2-gallery" accept="image/*" class="visually-hidden" />
@@ -57,6 +57,15 @@
 
       <button type="button" id="submit-btn" disabled>この写真で占う</button>
     </section>
+
+    <div id="camera-modal" class="camera-modal hidden">
+      <video id="camera-video" class="camera-video" autoplay playsinline muted></video>
+      <div class="camera-controls">
+        <button type="button" id="camera-cancel" class="camera-cancel-btn">キャンセル</button>
+        <button type="button" id="camera-shutter" class="camera-shutter-btn" aria-label="撮影する"></button>
+        <span class="camera-controls-spacer" aria-hidden="true"></span>
+      </div>
+    </div>
 
     <section id="step-loading" class="hidden">
       <div class="mystic-card mystic-card-loading">

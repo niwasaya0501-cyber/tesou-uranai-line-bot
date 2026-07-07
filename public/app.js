@@ -14,6 +14,12 @@
   const photoInput1Gallery = document.getElementById('photo-input-1-gallery');
   const photoInput2Camera = document.getElementById('photo-input-2-camera');
   const photoInput2Gallery = document.getElementById('photo-input-2-gallery');
+  const photoCameraBtn1 = document.getElementById('photo-camera-btn-1');
+  const photoCameraBtn2 = document.getElementById('photo-camera-btn-2');
+  const cameraModal = document.getElementById('camera-modal');
+  const cameraVideo = document.getElementById('camera-video');
+  const cameraShutter = document.getElementById('camera-shutter');
+  const cameraCancel = document.getElementById('camera-cancel');
   const preview1 = document.getElementById('preview-1');
   const preview2 = document.getElementById('preview-2');
   const submitBtn = document.getElementById('submit-btn');
@@ -41,6 +47,8 @@
   let resizedDataUrl1 = null;
   let resizedDataUrl2 = null;
   let userId = null;
+  let cameraStream = null;
+  let activeCameraSlot = null;
 
   function showStep(step) {
     [stepWorry, stepPhoto, stepLoading, stepDone, stepError].forEach((el) => {
@@ -180,6 +188,59 @@
   bindPhotoInput(photoInput2Camera, setPhoto2);
   bindPhotoInput(photoInput2Gallery, setPhoto2);
 
+  // スマホの<input capture>はネイティブカメラを起動できるが、
+  // PCのブラウザはこの属性を無視してファイル選択ダイアログを開くだけになる。
+  // そのため、まずgetUserMediaでWebカメラの映像を取得して自前の撮影UIを開き、
+  // 取得できない環境（対応ブラウザでない・権限拒否など）では
+  // 従来通り<input capture>のクリックにフォールバックする。
+  function stopCameraStream() {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach((track) => track.stop());
+      cameraStream = null;
+    }
+  }
+
+  function closeCameraModal() {
+    stopCameraStream();
+    cameraVideo.srcObject = null;
+    cameraModal.classList.add('hidden');
+    activeCameraSlot = null;
+  }
+
+  async function openCamera(slot) {
+    const fallbackInput = slot === 1 ? photoInput1Camera : photoInput2Camera;
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      fallbackInput.click();
+      return;
+    }
+
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: 'environment' } },
+        audio: false,
+      });
+      activeCameraSlot = slot;
+      cameraVideo.srcObject = cameraStream;
+      cameraModal.classList.remove('hidden');
+    } catch (err) {
+      console.warn('getUserMedia failed, falling back to native file picker:', err);
+      fallbackInput.click();
+    }
+  }
+
+  photoCameraBtn1.addEventListener('click', () => openCamera(1));
+  photoCameraBtn2.addEventListener('click', () => openCamera(2));
+
+  cameraShutter.addEventListener('click', () => {
+    const dataUrl = drawToCanvas(cameraVideo, cameraVideo.videoWidth, cameraVideo.videoHeight);
+    if (activeCameraSlot === 1) setPhoto1(dataUrl);
+    else if (activeCameraSlot === 2) setPhoto2(dataUrl);
+    closeCameraModal();
+  });
+
+  cameraCancel.addEventListener('click', closeCameraModal);
+
   submitBtn.addEventListener('click', async () => {
     if (!resizedDataUrl1 || !selectedWorry || !userId) return;
 
@@ -217,6 +278,7 @@
   });
 
   retryBtn.addEventListener('click', () => {
+    closeCameraModal();
     selectedWorry = null;
     selectedWorryText = null;
     resizedDataUrl1 = null;
