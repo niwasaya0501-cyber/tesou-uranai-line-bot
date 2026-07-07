@@ -48,8 +48,8 @@
     });
     step.classList.remove('hidden');
 
-    // 完了画面はカード内に独自のタイトルがあるため、上の見出しは重複するので隠す
-    pageTitle.classList.toggle('hidden', step === stepDone);
+    // 完了画面・鑑定中画面はカード内に独自のタイトルがあるため、上の見出しは重複するので隠す
+    pageTitle.classList.toggle('hidden', step === stepDone || step === stepLoading);
   }
 
   function drawToCanvas(source, sourceWidth, sourceHeight) {

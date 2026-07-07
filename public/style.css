@@ -207,6 +207,21 @@ h1 {
   background: #f8eef8;
 }
 
+.mystic-moon-pulse {
+  animation: mystic-pulse 1.8s ease-in-out infinite;
+}
+
+@keyframes mystic-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(0.92);
+  }
+}
+
 .mystic-star {
   position: absolute;
   color: #c9a4de;
