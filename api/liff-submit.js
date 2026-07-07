@@ -1,10 +1,7 @@
 const { resizeForVision } = require('../lib/image');
-const { readPalm, WORRY_LABELS, UNREADABLE_MESSAGE } = require('../lib/openai');
+const { readPalm, WORRY_LABELS, UNREADABLE_MESSAGE, buildFollowUpInvite } = require('../lib/openai');
 const { pushMessage } = require('../lib/line');
 const { saveSession } = require('../lib/conversation');
-
-const FOLLOW_UP_INVITE =
-'気になることがあれば、このトークにそのまま質問してみてくださいね（例：「今年の恋愛運は？」など）。';
 
 // 手前でクライアント側リサイズ済みだが、念のため異常に大きいリクエストは弾く
 const MAX_INPUT_BYTES = 8 * 1024 * 1024;
@@ -75,7 +72,10 @@ module.exports = async (req, res) => {
     const isUnreadable = resultText.includes(UNREADABLE_MESSAGE);
 
     // 読み取れなかった場合は「続けて質問できます」の案内は不要なので、鑑定結果のみ送る
-    await pushMessage(userId, isUnreadable ? resultText : [resultText, FOLLOW_UP_INVITE]);
+    await pushMessage(
+      userId,
+      isUnreadable ? resultText : [resultText, buildFollowUpInvite(worry, worryText)]
+    );
 
     // 読み取れた場合のみ、この後LINEのトークで続きの質問ができるようセッションを保存する。
     // ここが失敗しても鑑定結果自体は既に届いているので、レスポンスは成功のままにする
