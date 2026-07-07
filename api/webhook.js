@@ -156,10 +156,14 @@ async function handleEvent(event, baseUrl) {
       console.error('saveSession error:', err);
     }
 
+    // 続けて質問できることが伝わるよう、固定の一言を毎回添える
+    // (AIに生成させず固定文言にすることで、コストと文言のブレを抑える)
+    const replyWithHint = `${replyText}\n\n他に気になることがあれば、続けて聞いてくださいね。`;
+
     // 「終わり？」と紛らわしくなる大きなボタン付きメッセージは出さず、
-    // 目立たないクイックリプライで「続きを聞く／新しくする」を毎回選べるようにする
+    // 目立たないクイックリプライで「新しくする」を毎回選べるようにする
     await replyMessage(event.replyToken, [
-      { type: 'text', text: replyText, quickReply: buildContinueQuickReply() },
+      { type: 'text', text: replyWithHint, quickReply: buildContinueQuickReply() },
     ]);
   }
 }
