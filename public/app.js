@@ -20,6 +20,7 @@
   const closeBtn = document.getElementById('close-btn');
   const retryBtn = document.getElementById('retry-btn');
   const errorMessage = document.getElementById('error-message');
+  const pageTitle = document.getElementById('page-title');
 
   const WORRY_LABELS = {
     love: '恋愛',
@@ -46,6 +47,9 @@
       el.classList.add('hidden');
     });
     step.classList.remove('hidden');
+
+    // 完了画面はカード内に独自のタイトルがあるため、上の見出しは重複するので隠す
+    pageTitle.classList.toggle('hidden', step === stepDone);
   }
 
   function drawToCanvas(source, sourceWidth, sourceHeight) {
