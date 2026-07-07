@@ -119,13 +119,27 @@ async function handleEvent(event, baseUrl) {
       return;
     }
 
-    const replyText = await continueChat({
-      readingText: session.readingText,
-      worry: session.worry,
-      worryText: session.worryText,
-      turns: session.turns,
-      userMessage: event.message.text,
-    });
+    // OpenAI呼び出しが失敗しても無反応にせず、LIFFへの案内を返す
+    let replyText;
+    try {
+      replyText = await continueChat({
+        readingText: session.readingText,
+        worry: session.worry,
+        worryText: session.worryText,
+        turns: session.turns,
+        userMessage: event.message.text,
+      });
+    } catch (err) {
+      console.error('continueChat error:', err);
+      await replyMessage(event.replyToken, [
+        liffButtonMessage(
+          '手相を占う',
+          '少し混み合っているようです。少し時間をおいてから、もう一度メッセージを送るか、下のボタンから新しく占ってみてください。',
+          baseUrl
+        ),
+      ]);
+      return;
+    }
 
     // 保存が失敗しても、既に生成できた返信は届ける(次回以降の文脈は引き継げないだけにする)
     try {
@@ -142,7 +156,11 @@ async function handleEvent(event, baseUrl) {
       console.error('saveSession error:', err);
     }
 
-    await replyMessage(event.replyToken, [{ type: 'text', text: replyText }]);
+    // トーク履歴を消してセッションが見えなくなっていても迷わないよう、
+    // 会話継続の返信には毎回LIFFへのリンクを添える
+    const replyWithLiffLink = `${replyText}\n\n（新しく占いたいときは、いつでもこちらからどうぞ）\nhttps://liff.line.me/${process.env.LIFF_ID}`;
+
+    await replyMessage(event.replyToken, [{ type: 'text', text: replyWithLiffLink }]);
   }
 }
 
