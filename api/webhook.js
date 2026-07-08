@@ -1,6 +1,21 @@
-const { verifySignature, replyMessage, buildContinueQuickReply } = require('../lib/line');
+const {
+  verifySignature,
+  replyMessage,
+  buildContinueQuickReply,
+  buildEndOfRallyQuickReply,
+} = require('../lib/line');
 const { continueChat } = require('../lib/openai');
 const { getSession, saveSession, deleteSession, MAX_TURNS } = require('../lib/conversation');
+
+// ユーザーが「消して」等と送ったら、いつでもその場でセッション(鑑定内容・やりとり)を削除できるようにする
+function isDeleteRequest(text) {
+  return text.includes('消して') || text.includes('削除');
+}
+
+// 往復上限到達時に出す「消す/残す」の選択肢のうち、「残す」への返答判定
+function isKeepRequest(text) {
+  return text.includes('残す') || text.includes('残して');
+}
 
 function readRawBody(req) {
   return new Promise((resolve, reject) => {
@@ -102,19 +117,44 @@ async function handleEvent(event, baseUrl) {
       return;
     }
 
-    // 往復上限に達していたら、そこで会話を打ち切って新しい鑑定を促す
-    if (session.turnCount >= MAX_TURNS) {
+    // 「消して」等が送られたら、往復回数によらずいつでもその場でセッションを削除する
+    if (isDeleteRequest(event.message.text)) {
       try {
         await deleteSession(userId);
       } catch (err) {
         console.error('deleteSession error:', err);
       }
       await replyMessage(event.replyToken, [
+        {
+          type: 'text',
+          text: 'これまでの鑑定内容とやりとりを削除しました。またいつでも新しく手相を占ってくださいね。',
+        },
+      ]);
+      return;
+    }
+
+    // 「残す」は、往復上限到達時に出す選択肢への返答用。何もせず現状維持でよいことを伝えるだけ
+    if (isKeepRequest(event.message.text)) {
+      await replyMessage(event.replyToken, [
+        { type: 'text', text: '承知しました。このまま残しておきますね。' },
+      ]);
+      return;
+    }
+
+    // 往復上限に達していたら、そこで会話を打ち切る。
+    // 内容を自動削除するのではなく、消すか残すかをユーザー自身に選んでもらう
+    if (session.turnCount >= MAX_TURNS) {
+      await replyMessage(event.replyToken, [
         liffButtonMessage(
           '手相を占う',
-          'このやりとりは一旦ここまでとさせていただきますね。また下のボタンから、新しく手相を占ってみてください！',
+          'このやりとりは一旦ここまでとさせていただきますね。また新しく手相を占いたいときは、下のボタンをタップしてください！',
           baseUrl
         ),
+        {
+          type: 'text',
+          text: 'これまでの鑑定内容とやりとりは消しますか？残しますか？（残す場合も24時間経つと自動的に削除されます）',
+          quickReply: buildEndOfRallyQuickReply(),
+        },
       ]);
       return;
     }
