@@ -1,8 +1,11 @@
 {
   "outputDirectory": "public",
   "functions": {
-    "api/liff-submit.js": {
+    "api/submit.js": {
       "maxDuration": 60
+    },
+    "api/chat.js": {
+      "maxDuration": 30
     }
   },
   "headers": [

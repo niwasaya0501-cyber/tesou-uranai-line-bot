@@ -1,12 +1,17 @@
 const { resizeForVision } = require('../lib/image');
-const { readPalm, WORRY_LABELS, buildFollowUpInvite } = require('../lib/openai');
-const { pushMessages, buildContinueQuickReply } = require('../lib/line');
+const { readPalm, WORRY_LABELS, getFollowUpExample } = require('../lib/openai');
 const { saveSession } = require('../lib/conversation');
+const { getClientIp, checkRateLimit } = require('../lib/rateLimit');
 
 // 手前でクライアント側リサイズ済みだが、念のため異常に大きいリクエストは弾く
 const MAX_INPUT_BYTES = 8 * 1024 * 1024;
 const MAX_IMAGES = 2;
 const MAX_WORRY_TEXT_LENGTH = 100;
+
+// LINEの友だち登録という参入障壁がなくなるため、IP単位で1日あたりの
+// 鑑定回数（＝画像を使うOpenAI呼び出し）に上限を設け、費用の際限ない増加を防ぐ
+const DAILY_LIMIT_PER_IP = 15;
+const RATE_LIMIT_WINDOW_SECONDS = 60 * 60 * 24;
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -14,11 +19,11 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const { userId, worry, images } = req.body || {};
+  const { sessionId, worry, images } = req.body || {};
   let { worryText } = req.body || {};
 
-  if (!userId || typeof userId !== 'string' || !userId.startsWith('U')) {
-    res.status(400).json({ error: 'invalid userId' });
+  if (!sessionId || typeof sessionId !== 'string' || sessionId.length > 100) {
+    res.status(400).json({ error: 'invalid sessionId' });
     return;
   }
   if (!worry || !WORRY_LABELS[worry]) {
@@ -45,6 +50,22 @@ module.exports = async (req, res) => {
   }
 
   try {
+    const ip = getClientIp(req);
+    const withinLimit = await checkRateLimit(
+      `ratelimit:submit:${ip}`,
+      DAILY_LIMIT_PER_IP,
+      RATE_LIMIT_WINDOW_SECONDS
+    );
+    if (!withinLimit) {
+      res.status(429).json({ error: '本日の鑑定回数の上限に達しました。また明日お試しください。' });
+      return;
+    }
+  } catch (err) {
+    // レート制限のチェック自体が失敗しても、鑑定機能全体を止めない
+    console.error('rate limit check error:', err);
+  }
+
+  try {
     const inputBuffers = images.map((imageBase64) => {
       const base64Data = imageBase64.includes(',')
         ? imageBase64.split(',')[1]
@@ -63,33 +84,22 @@ module.exports = async (req, res) => {
 
     // 画像の中身は記録せず、サイズだけログに残す（「読み取れません」が続く場合の切り分け用）
     console.log(
-      `liff-submit: images=${resizedBuffers.length}, sizes=${resizedBuffers
+      `submit: images=${resizedBuffers.length}, sizes=${resizedBuffers
         .map((b) => `${b.length}bytes`)
         .join(',')}, worry=${worry}`
     );
 
     const result = await readPalm(resizedBase64Images, worry, worryText);
 
-    // 読み取れなかった場合はLINEには何も送らず、LIFF側で直接撮り直しを促す
-    // （呼び出し元はこのレスポンスを待ってから完了画面を出すため、フロントで判定できる）
     if (!result.readable) {
       res.status(200).json({ ok: true, unreadable: true });
       return;
     }
 
-    await pushMessages(userId, [
-      { type: 'text', text: result.text },
-      {
-        type: 'text',
-        text: buildFollowUpInvite(worry, worryText),
-        quickReply: buildContinueQuickReply(),
-      },
-    ]);
-
-    // この後LINEのトークで続きの質問ができるようセッションを保存する。
-    // ここが失敗しても鑑定結果自体は既に届いているので、レスポンスは成功のままにする
+    // この後ページ上のチャットで続けて質問できるようセッションを保存する。
+    // ここが失敗しても鑑定結果自体はレスポンスで返せるので、成功のままにする
     try {
-      await saveSession(userId, {
+      await saveSession(sessionId, {
         worry,
         worryText,
         readingText: result.text,
@@ -100,9 +110,14 @@ module.exports = async (req, res) => {
       console.error('saveSession error:', sessionErr);
     }
 
-    res.status(200).json({ ok: true, unreadable: false });
+    res.status(200).json({
+      ok: true,
+      unreadable: false,
+      reading: result.text,
+      followUpExample: getFollowUpExample(worry, worryText),
+    });
   } catch (err) {
-    console.error('liff-submit error:', err);
+    console.error('submit error:', err);
     res.status(500).json({ error: 'internal error' });
   }
 };

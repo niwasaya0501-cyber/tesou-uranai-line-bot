@@ -4,7 +4,6 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>手相占い</title>
-<script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
@@ -102,7 +101,7 @@
       </div>
     </section>
 
-    <section id="step-done" class="hidden">
+    <section id="step-result" class="hidden">
       <div class="mystic-card">
         <span class="mystic-corner mystic-corner-tl" aria-hidden="true">✦</span>
         <span class="mystic-corner mystic-corner-tr" aria-hidden="true">✦</span>
@@ -114,13 +113,9 @@
           <span class="mystic-star mystic-star-2">✦</span>
         </div>
 
-        <h2 class="mystic-title">手相占い</h2>
+        <h2 class="mystic-title">鑑定結果</h2>
         <div class="mystic-divider" aria-hidden="true">✦</div>
-        <p class="mystic-message">結果をLINEのトークに送りました！</p>
-
-        <button type="button" id="close-btn" class="mystic-btn">
-          <span aria-hidden="true">✦</span>閉じる<span aria-hidden="true">✦</span>
-        </button>
+        <p id="reading-text" class="reading-text"></p>
 
         <div class="mystic-hand" aria-hidden="true">
           <div class="mystic-fingers">
@@ -139,6 +134,29 @@
           <span class="mystic-crystal mystic-crystal-3"></span>
         </div>
       </div>
+
+      <div id="chat-section" class="chat-section">
+        <p class="step-heading step-heading-sub">気になることを聞いてみる</p>
+        <div id="chat-log" class="chat-log"></div>
+
+        <div id="chat-limit-actions" class="chat-limit-actions hidden">
+          <p class="chat-limit-message">このやりとりは一旦ここまでとさせていただきますね。これまでの鑑定内容とやりとりを消しますか？残しますか？（残す場合も24時間経つと自動的に削除されます）</p>
+          <div class="chat-limit-buttons">
+            <button type="button" id="chat-delete-btn">消す</button>
+            <button type="button" id="chat-keep-btn">残す</button>
+          </div>
+        </div>
+
+        <div id="chat-input-row" class="chat-input-row">
+          <input type="text" id="chat-input" maxlength="300" placeholder="気になることを聞いてみてください" />
+          <button type="button" id="chat-send-btn">送る</button>
+        </div>
+        <button type="button" id="chat-clear-btn" class="chat-clear-btn">やりとりを消す</button>
+      </div>
+
+      <button type="button" id="new-reading-btn" class="mystic-btn">
+        <span aria-hidden="true">✦</span>新しく占う<span aria-hidden="true">✦</span>
+      </button>
     </section>
 
     <section id="step-error" class="hidden">

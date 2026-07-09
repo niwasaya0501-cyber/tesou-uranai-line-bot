@@ -2,7 +2,7 @@
   const stepWorry = document.getElementById('step-worry');
   const stepPhoto = document.getElementById('step-photo');
   const stepLoading = document.getElementById('step-loading');
-  const stepDone = document.getElementById('step-done');
+  const stepResult = document.getElementById('step-result');
   const stepError = document.getElementById('step-error');
   const stepUnreadable = document.getElementById('step-unreadable');
   const selectedWorrySpan = document.getElementById('selected-worry');
@@ -24,11 +24,20 @@
   const preview1 = document.getElementById('preview-1');
   const preview2 = document.getElementById('preview-2');
   const submitBtn = document.getElementById('submit-btn');
-  const closeBtn = document.getElementById('close-btn');
   const retryBtn = document.getElementById('retry-btn');
   const rereadBtn = document.getElementById('reread-btn');
   const errorMessage = document.getElementById('error-message');
   const pageTitle = document.getElementById('page-title');
+  const readingTextEl = document.getElementById('reading-text');
+  const chatLog = document.getElementById('chat-log');
+  const chatInput = document.getElementById('chat-input');
+  const chatSendBtn = document.getElementById('chat-send-btn');
+  const chatInputRow = document.getElementById('chat-input-row');
+  const chatLimitActions = document.getElementById('chat-limit-actions');
+  const chatDeleteBtn = document.getElementById('chat-delete-btn');
+  const chatKeepBtn = document.getElementById('chat-keep-btn');
+  const chatClearBtn = document.getElementById('chat-clear-btn');
+  const newReadingBtn = document.getElementById('new-reading-btn');
 
   const WORRY_LABELS = {
     love: '恋愛',
@@ -48,18 +57,33 @@
   let selectedWorryText = null;
   let resizedDataUrl1 = null;
   let resizedDataUrl2 = null;
-  let userId = null;
   let cameraStream = null;
   let activeCameraSlot = null;
 
+  // LINEのuserIdの代わりに、このブラウザだけで使う匿名IDを作ってlocalStorageに保存する。
+  // 同じ端末・ブラウザから再度開いたときに、同じ鑑定結果・やりとりを続けられるようにするため
+  function getOrCreateSessionId() {
+    const STORAGE_KEY = 'palmSessionId';
+    let id = localStorage.getItem(STORAGE_KEY);
+    if (!id) {
+      id =
+        (window.crypto && crypto.randomUUID && crypto.randomUUID()) ||
+        `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      localStorage.setItem(STORAGE_KEY, id);
+    }
+    return id;
+  }
+
+  const sessionId = getOrCreateSessionId();
+
   function showStep(step) {
-    [stepWorry, stepPhoto, stepLoading, stepDone, stepError, stepUnreadable].forEach((el) => {
+    [stepWorry, stepPhoto, stepLoading, stepResult, stepError, stepUnreadable].forEach((el) => {
       el.classList.add('hidden');
     });
     step.classList.remove('hidden');
 
-    // 完了画面・鑑定中画面はカード内に独自のタイトルがあるため、上の見出しは重複するので隠す
-    pageTitle.classList.toggle('hidden', step === stepDone || step === stepLoading);
+    // 鑑定中画面はカード内に独自のタイトルがあるため、上の見出しは重複するので隠す
+    pageTitle.classList.toggle('hidden', step === stepLoading);
   }
 
   function drawToCanvas(source, sourceWidth, sourceHeight) {
@@ -105,27 +129,6 @@
       reader.onerror = reject;
       reader.readAsDataURL(file);
     });
-  }
-
-  async function init() {
-    try {
-      const configRes = await fetch('/api/liff-config');
-      const { liffId } = await configRes.json();
-
-      await liff.init({ liffId });
-
-      if (!liff.isLoggedIn()) {
-        liff.login();
-        return;
-      }
-
-      const profile = await liff.getProfile();
-      userId = profile.userId;
-    } catch (err) {
-      console.error(err);
-      errorMessage.textContent = '初期化に失敗しました。LINEアプリから開き直してください。';
-      showStep(stepError);
-    }
   }
 
   document.querySelectorAll('.worry-btn').forEach((btn) => {
@@ -243,8 +246,23 @@
 
   cameraCancel.addEventListener('click', closeCameraModal);
 
+  function resetChat() {
+    chatLog.innerHTML = '';
+    chatInput.value = '';
+    chatInputRow.classList.remove('hidden');
+    chatLimitActions.classList.add('hidden');
+  }
+
+  function appendChatMessage(role, text) {
+    const bubble = document.createElement('p');
+    bubble.className = role === 'user' ? 'chat-bubble chat-bubble-user' : 'chat-bubble chat-bubble-assistant';
+    bubble.textContent = text;
+    chatLog.appendChild(bubble);
+    chatLog.scrollTop = chatLog.scrollHeight;
+  }
+
   submitBtn.addEventListener('click', async () => {
-    if (!resizedDataUrl1 || !selectedWorry || !userId) return;
+    if (!resizedDataUrl1 || !selectedWorry) return;
 
     showStep(stepLoading);
 
@@ -252,23 +270,39 @@
     if (resizedDataUrl2) images.push(resizedDataUrl2);
 
     try {
-      const res = await fetch('/api/liff-submit', {
+      const res = await fetch('/api/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId,
+          sessionId,
           worry: selectedWorry,
           worryText: selectedWorryText,
           images,
         }),
       });
 
+      if (res.status === 429) {
+        const data = await res.json();
+        errorMessage.textContent = data.error || '本日の鑑定回数の上限に達しました。また明日お試しください。';
+        showStep(stepError);
+        return;
+      }
+
       if (!res.ok) {
         throw new Error(`submit failed: ${res.status}`);
       }
 
       const data = await res.json();
-      showStep(data.unreadable ? stepUnreadable : stepDone);
+
+      if (data.unreadable) {
+        showStep(stepUnreadable);
+        return;
+      }
+
+      readingTextEl.textContent = data.reading;
+      chatInput.placeholder = data.followUpExample ? `例：${data.followUpExample}` : '気になることを聞いてみてください';
+      resetChat();
+      showStep(stepResult);
     } catch (err) {
       console.error(err);
       errorMessage.textContent = 'エラーが発生しました。もう一度お試しください。';
@@ -276,8 +310,78 @@
     }
   });
 
-  closeBtn.addEventListener('click', () => {
-    liff.closeWindow();
+  async function sendChatMessage() {
+    const text = chatInput.value.trim();
+    if (!text) return;
+
+    appendChatMessage('user', text);
+    chatInput.value = '';
+    chatInput.disabled = true;
+    chatSendBtn.disabled = true;
+
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, message: text }),
+      });
+
+      if (res.status === 429) {
+        const data = await res.json();
+        appendChatMessage('assistant', data.error || '本日の利用上限に達しました。また明日お試しください。');
+        return;
+      }
+
+      if (!res.ok) {
+        throw new Error(`chat failed: ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      if (data.reply) {
+        appendChatMessage('assistant', data.reply);
+      }
+
+      if (data.limitReached) {
+        chatInputRow.classList.add('hidden');
+        chatLimitActions.classList.remove('hidden');
+      }
+    } catch (err) {
+      console.error(err);
+      appendChatMessage('assistant', '少し混み合っているようです。少し時間をおいてから、もう一度送ってみてください。');
+    } finally {
+      chatInput.disabled = false;
+      chatSendBtn.disabled = false;
+      chatInput.focus();
+    }
+  }
+
+  chatSendBtn.addEventListener('click', sendChatMessage);
+  chatInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') sendChatMessage();
+  });
+
+  async function clearSession() {
+    try {
+      await fetch('/api/delete-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      });
+    } catch (err) {
+      console.error('delete-session error:', err);
+    }
+    resetChat();
+    appendChatMessage('assistant', 'これまでの鑑定内容とやりとりを削除しました。またいつでも新しく手相を占ってくださいね。');
+    chatInputRow.classList.add('hidden');
+  }
+
+  chatDeleteBtn.addEventListener('click', clearSession);
+  chatClearBtn.addEventListener('click', clearSession);
+
+  chatKeepBtn.addEventListener('click', () => {
+    chatLimitActions.classList.add('hidden');
+    appendChatMessage('assistant', '承知しました。このまま残しておきますね。');
   });
 
   function resetPhotos() {
@@ -292,7 +396,7 @@
     submitBtn.disabled = true;
   }
 
-  retryBtn.addEventListener('click', () => {
+  function goToWorryStep() {
     closeCameraModal();
     selectedWorry = null;
     selectedWorryText = null;
@@ -301,13 +405,14 @@
     otherWorryText.value = '';
     worryButtons.classList.remove('hidden');
     showStep(stepWorry);
-  });
+  }
+
+  retryBtn.addEventListener('click', goToWorryStep);
+  newReadingBtn.addEventListener('click', goToWorryStep);
 
   // 手相が読み取れなかった場合は、悩みの選択はそのままに写真だけ撮り直してもらう
   rereadBtn.addEventListener('click', () => {
     resetPhotos();
     showStep(stepPhoto);
   });
-
-  init();
 })();
