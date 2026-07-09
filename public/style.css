@@ -458,18 +458,21 @@ h1 {
   gap: 10px;
   max-height: 320px;
   overflow-y: auto;
+  scrollbar-gutter: stable;
   margin: 12px 0;
-  padding: 4px 2px;
+  padding: 4px 16px 4px 2px;
 }
 
 .chat-bubble {
-  max-width: 85%;
+  max-width: 80%;
   margin: 0;
   padding: 10px 14px;
   border-radius: 14px;
   font-size: 0.9rem;
   line-height: 1.6;
   white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 .chat-bubble-user {
